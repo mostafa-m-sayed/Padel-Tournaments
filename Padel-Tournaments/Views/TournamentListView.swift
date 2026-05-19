@@ -154,26 +154,6 @@ struct StatusBadge: View {
     }
 }
 
-extension TournamentStatus {
-    var displayName: String {
-        switch self {
-        case .setup: return "Setup"
-        case .groupStage: return "Group Stage"
-        case .knockout: return "Knockout"
-        case .finished: return "Finished"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .setup: return .orange
-        case .groupStage: return .blue
-        case .knockout: return .purple
-        case .finished: return .green
-        }
-    }
-}
-
 #Preview {
     NavigationStack {
         TournamentListView()

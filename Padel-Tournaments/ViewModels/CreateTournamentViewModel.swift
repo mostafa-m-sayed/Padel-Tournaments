@@ -13,12 +13,15 @@ final class CreateTournamentViewModel: ObservableObject {
     @Published var currentStep: TournamentCreationStep = .basicInfo
     @Published var tournamentName = ""
     @Published var numberOfCourts = 1
+    @Published var numberOfGroups = 2  // New: configurable number of groups
+    @Published var courtAssignmentStrategy: CourtAssignmentStrategy = .automatic  // New: court assignment strategy
     @Published var setType: SetType = .short
     @Published var teams: [Team] = []
     @Published var groupA: [Team] = []
     @Published var groupB: [Team] = []
     @Published var isLoading = false
     @Published var error: Error?
+    @Published var createdTournamentId: String?
     
     private let tournamentRepository: TournamentRepositoryProtocol
     
@@ -115,27 +118,72 @@ final class CreateTournamentViewModel: ObservableObject {
         isLoading = true
         error = nil
         
+        // Create groups dynamically based on numberOfGroups
+        let groups = createGroups()
+        
+        // Generate matches using ScheduleEngine
+        let matches = ScheduleEngine.generateMatches(
+            groups: groups,
+            courts: numberOfCourts
+        )
+        
+        // Apply court assignment strategy
+        let tournamentId = UUID().uuidString
         let tournament = Tournament(
-            id: UUID().uuidString,
+            id: tournamentId,
             name: tournamentName,
             courts: numberOfCourts,
+            numberOfGroups: numberOfGroups,
             setType: setType,
-            status: .setup,
+            status: .groupStage, // Start in group stage once created
             createdAt: Date(),
-            teams: teams,
-            groups: [
-                Group(id: "A", name: "A", teamIds: groupA.map { $0.id }),
-                Group(id: "B", name: "B", teamIds: groupB.map { $0.id })
-            ]
+            courtAssignmentStrategy: courtAssignmentStrategy
+        )
+        
+        // Assign courts to matches
+        let matchesWithCourts = CourtAssignmentManager.assignCourts(
+            to: matches,
+            tournament: tournament
         )
         
         do {
-            try await tournamentRepository.createTournament(tournament)
+            try await tournamentRepository.createTournamentWithSubcollections(
+                tournament, 
+                teams: teams, 
+                groups: groups, 
+                matches: matchesWithCourts
+            )
+            createdTournamentId = tournamentId
         } catch {
             self.error = error
         }
         
         isLoading = false
+    }
+    
+    /// Creates groups dynamically based on numberOfGroups
+    private func createGroups() -> [Group] {
+        let groupNames = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ".prefix(numberOfGroups))
+        var groups: [Group] = []
+        
+        // Distribute teams evenly across groups
+        let shuffledTeams = teams.shuffled()
+        let teamsPerGroup = teams.count / numberOfGroups
+        let extraTeams = teams.count % numberOfGroups
+        
+        for (index, groupName) in groupNames.enumerated() {
+            let startIndex = index * teamsPerGroup + min(index, extraTeams)
+            let endIndex = startIndex + teamsPerGroup + (index < extraTeams ? 1 : 0)
+            
+            let groupTeams = Array(shuffledTeams[startIndex..<endIndex])
+            groups.append(Group(
+                id: String(groupName),
+                name: String(groupName),
+                teamIds: groupTeams.map { $0.id }
+            ))
+        }
+        
+        return groups
     }
     
     var canProceedFromBasicInfo: Bool {

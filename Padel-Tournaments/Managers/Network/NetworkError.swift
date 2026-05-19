@@ -12,7 +12,7 @@ enum NetworkError: LocalizedError {
     case serverError(String)
     case decodingError
     case unauthorized
-    case notFound
+    case documentNotFound
     case unknown(Error)
     
     var errorDescription: String? {
@@ -25,7 +25,7 @@ enum NetworkError: LocalizedError {
             return "Failed to process server response"
         case .unauthorized:
             return "Unauthorized access"
-        case .notFound:
+        case .documentNotFound:
             return "Resource not found"
         case .unknown(let error):
             return "An unexpected error occurred: \(error.localizedDescription)"

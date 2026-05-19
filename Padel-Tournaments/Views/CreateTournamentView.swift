@@ -10,6 +10,7 @@ import SwiftUI
 struct CreateTournamentView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = CreateTournamentViewModel()
+    @State private var showingSchedule = false
     
     var body: some View {
         NavigationStack {
@@ -53,6 +54,16 @@ struct CreateTournamentView: View {
             } message: {
                 Text(viewModel.error?.localizedDescription ?? "")
             }
+            .navigationDestination(isPresented: $showingSchedule) {
+                if let tournamentId = viewModel.createdTournamentId {
+                    ScheduleView(tournamentId: tournamentId)
+                }
+            }
+            .onChange(of: viewModel.createdTournamentId) { _, newValue in
+                if newValue != nil {
+                    showingSchedule = true
+                }
+            }
         }
     }
     
@@ -79,9 +90,7 @@ struct CreateTournamentView: View {
                 Button("Create") {
                     Task {
                         await viewModel.createTournament()
-                        if viewModel.error == nil {
-                            dismiss()
-                        }
+                        // Navigation will happen automatically via onChange
                     }
                 }
                 .disabled(!viewModel.canCreateTournament)

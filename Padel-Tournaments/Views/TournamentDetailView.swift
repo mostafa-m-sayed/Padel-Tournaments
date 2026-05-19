@@ -143,9 +143,11 @@ struct TournamentMatchesView: View {
                 id: "1",
                 name: "Summer Championship",
                 courts: 3,
+                numberOfGroups: 4,
                 setType: .short,
                 status: .groupStage,
-                createdAt: Date()
+                createdAt: Date(),
+                courtAssignmentStrategy: .automatic
             )
         )
     }

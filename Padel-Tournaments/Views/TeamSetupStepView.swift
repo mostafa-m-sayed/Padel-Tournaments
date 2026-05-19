@@ -192,8 +192,8 @@ struct AddTeamSheet: View {
             }
         }
         .onAppear() {
-            player1Name = "TestF"
-            player2Name = "TestL"
+            player1Name = "TestF - \(Int.random(in: 1...1000))"
+            player2Name = "TestL - \(Int.random(in: 1...1000))"
         }
     }
 }
