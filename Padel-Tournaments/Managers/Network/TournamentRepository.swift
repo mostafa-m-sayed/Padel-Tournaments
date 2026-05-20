@@ -6,17 +6,23 @@
 //
 
 import Foundation
+import Firebase
+import FirebaseFirestore
 
 protocol TournamentRepositoryProtocol {
     func getAllTournaments() async throws -> [Tournament]
     func createTournament(_ tournament: Tournament) async throws
-    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [Group], matches: [Match]) async throws
+    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [TournamentGroup], matches: [Match]) async throws
     func updateTournament(_ tournament: Tournament) async throws
     func deleteTournament(id: String) async throws
     func joinTournament(tournamentId: String, team: Team) async throws
     func fetchTournamentDetails(id: String) async throws -> Tournament
     func updateMatches(tournamentId: String, matches: [Match]) async throws
-    func updateMatchScore(tournamentId: String, matchId: String, score1: Int, score2: Int) async throws
+    func updateMatchScore(tournamentId: String, matchId: String, score1: Int?, score2: Int?) async throws
+    
+    // Real-time listeners
+    func listenToMatches(tournamentId: String, completion: @escaping ([Match]) -> Void) -> ListenerRegistration
+    func listenToTournament(tournamentId: String, completion: @escaping (Tournament?) -> Void) -> ListenerRegistration
 }
 
 final class TournamentRepository: TournamentRepositoryProtocol {
@@ -46,7 +52,7 @@ final class TournamentRepository: TournamentRepositoryProtocol {
         try await networkManager.joinTournament(tournamentId: tournamentId, team: team)
     }
     
-    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [Group], matches: [Match]) async throws {
+    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [TournamentGroup], matches: [Match]) async throws {
         try await networkManager.createTournamentWithSubcollections(tournament, teams: teams, groups: groups, matches: matches)
     }
     
@@ -58,7 +64,17 @@ final class TournamentRepository: TournamentRepositoryProtocol {
         try await networkManager.updateMatches(tournamentId: tournamentId, matches: matches)
     }
     
-    func updateMatchScore(tournamentId: String, matchId: String, score1: Int, score2: Int) async throws {
+    func updateMatchScore(tournamentId: String, matchId: String, score1: Int?, score2: Int?) async throws {
         try await networkManager.updateMatchScore(tournamentId: tournamentId, matchId: matchId, score1: score1, score2: score2)
+    }
+    
+    // MARK: - Real-time listeners
+    
+    func listenToMatches(tournamentId: String, completion: @escaping ([Match]) -> Void) -> ListenerRegistration {
+        return networkManager.listenToMatches(tournamentId: tournamentId, completion: completion)
+    }
+    
+    func listenToTournament(tournamentId: String, completion: @escaping (Tournament?) -> Void) -> ListenerRegistration {
+        return networkManager.listenToTournament(tournamentId: tournamentId, completion: completion)
     }
 }

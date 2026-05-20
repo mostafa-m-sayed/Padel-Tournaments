@@ -17,10 +17,14 @@ protocol NetworkManagerProtocol {
     func joinTournament(tournamentId: String, team: Team) async throws
     
     // New methods for complete tournament management
-    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [Group], matches: [Match]) async throws
+    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [TournamentGroup], matches: [Match]) async throws
     func fetchTournamentDetails(id: String) async throws -> Tournament
     func updateMatches(tournamentId: String, matches: [Match]) async throws
-    func updateMatchScore(tournamentId: String, matchId: String, score1: Int, score2: Int) async throws
+    func updateMatchScore(tournamentId: String, matchId: String, score1: Int?, score2: Int?) async throws
+    
+    // Real-time listeners
+    func listenToMatches(tournamentId: String, completion: @escaping ([Match]) -> Void) -> ListenerRegistration
+    func listenToTournament(tournamentId: String, completion: @escaping (Tournament?) -> Void) -> ListenerRegistration
 }
 
 final class NetworkManager: NetworkManagerProtocol {
@@ -72,7 +76,7 @@ final class NetworkManager: NetworkManagerProtocol {
     
     // MARK: - Complete Tournament Management
     
-    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [Group], matches: [Match]) async throws {
+    func createTournamentWithSubcollections(_ tournament: Tournament, teams: [Team], groups: [TournamentGroup], matches: [Match]) async throws {
         let batch = db.batch()
         
         // Create main tournament document
@@ -142,7 +146,7 @@ final class NetworkManager: NetworkManagerProtocol {
             let groupsSnapshot = try await db.collection("tournaments").document(id)
                 .collection("groups").getDocuments()
             tournament.groups = groupsSnapshot.documents.compactMap { doc in
-                try? doc.data(as: Group.self)
+                try? doc.data(as: TournamentGroup.self)
             }
             
             // Fetch matches
@@ -179,16 +183,62 @@ final class NetworkManager: NetworkManagerProtocol {
         }
     }
     
-    func updateMatchScore(tournamentId: String, matchId: String, score1: Int, score2: Int) async throws {
+    func updateMatchScore(tournamentId: String, matchId: String, score1: Int?, score2: Int?) async throws {
         do {
+            var updateData: [String: Any] = [:]
+            
+            // Handle nil scores (clearing scores)
+            if let score1 = score1 {
+                updateData["score1"] = score1
+            } else {
+                updateData["score1"] = FieldValue.delete()
+            }
+            
+            if let score2 = score2 {
+                updateData["score2"] = score2
+            } else {
+                updateData["score2"] = FieldValue.delete()
+            }
+            
             try await db.collection("tournaments").document(tournamentId)
                 .collection("matches").document(matchId)
-                .updateData([
-                    "score1": score1,
-                    "score2": score2
-                ])
+                .updateData(updateData)
         } catch {
             throw NetworkError.unknown(error)
         }
+    }
+    
+    // MARK: - Real-time Listeners
+    
+    func listenToMatches(tournamentId: String, completion: @escaping ([Match]) -> Void) -> ListenerRegistration {
+        return db.collection("tournaments")
+            .document(tournamentId)
+            .collection("matches")
+            .addSnapshotListener { snapshot, error in
+                guard let snapshot = snapshot, error == nil else {
+                    completion([])
+                    return
+                }
+                
+                let matches = snapshot.documents.compactMap { doc in
+                    try? doc.data(as: Match.self)
+                }
+                completion(matches)
+            }
+    }
+    
+    func listenToTournament(tournamentId: String, completion: @escaping (Tournament?) -> Void) -> ListenerRegistration {
+        return db.collection("tournaments")
+            .document(tournamentId)
+            .addSnapshotListener { document, error in
+                guard let document = document,
+                      document.exists,
+                      error == nil,
+                      let tournament = try? document.data(as: Tournament.self) else {
+                    completion(nil)
+                    return
+                }
+                completion(tournament)
+            }
     }
 }

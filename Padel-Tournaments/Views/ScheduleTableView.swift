@@ -13,6 +13,7 @@ struct ScheduleTableView: View {
     let tournamentId: String
     @StateObject private var viewModel: ScheduleViewModel
     @State private var selectedGroup: String = "All"
+    @State private var selectedMatch: Match?
     @Environment(\.dismiss) private var dismiss
     
     init(tournamentId: String) {
@@ -79,17 +80,20 @@ struct ScheduleTableView: View {
                 selectedGroup = firstGroup
             }
         }
-        .onChange(of: selectedGroup) { newValue in
-            // Debug: Print match counts
-            if let matches = viewModel.groupedMatches[newValue] {
-                print("🔍 Group \(newValue): \(matches.count) matches")
-                for match in matches.sorted(by: { $0.round < $1.round }) {
-                    print("   Round \(match.round): \(match.team1Id) vs \(match.team2Id)")
-                }
-            } else if newValue == "All" {
-                print("🔍 All Groups:")
-                for (groupId, matches) in viewModel.groupedMatches {
-                    print("   Group \(groupId): \(matches.count) matches")
+        .sheet(item: $selectedMatch) { match in
+            if let tournament = viewModel.tournament {
+                ScoreEntryView(
+                    match: match,
+                    teams: tournament.teams,
+                    tournament: tournament
+                ) { score1, score2 in
+                    Task {
+                        await viewModel.updateMatchScore(
+                            matchId: match.id,
+                            score1: score1,
+                            score2: score2
+                        )
+                    }
                 }
             }
         }
@@ -143,7 +147,10 @@ struct ScheduleTableView: View {
                         courts: viewModel.tournament?.courts ?? 1,
                         teams: viewModel.tournament?.teams ?? [],
                         groupColor: groupColor(for: selectedGroup),
-                        isShowingAllGroups: selectedGroup == "All"
+                        isShowingAllGroups: selectedGroup == "All",
+                        onMatchTap: { match in
+                            selectedMatch = match
+                        }
                     )
                 }
             }
@@ -236,14 +243,16 @@ struct MatchRoundRow: View {
     let teams: [Team]
     let groupColor: Color
     let isShowingAllGroups: Bool
+    let onMatchTap: (Match) -> Void
     
-    init(round: Int, matches: [Match], courts: Int, teams: [Team], groupColor: Color, isShowingAllGroups: Bool = false) {
+    init(round: Int, matches: [Match], courts: Int, teams: [Team], groupColor: Color, isShowingAllGroups: Bool = false, onMatchTap: @escaping (Match) -> Void = { _ in }) {
         self.round = round
         self.matches = matches
         self.courts = courts
         self.teams = teams
         self.groupColor = groupColor
         self.isShowingAllGroups = isShowingAllGroups
+        self.onMatchTap = onMatchTap
     }
     
     var body: some View {
@@ -278,7 +287,9 @@ struct MatchRoundRow: View {
         
         if let match = match {
             let cellColor = isShowingAllGroups ? colorForGroup(match.groupId ?? "") : groupColor
-            MatchCell(match: match, teams: teams, groupColor: cellColor)
+            MatchCell(match: match, teams: teams, groupColor: cellColor, onTap: {
+                onMatchTap(match)
+            })
                 .padding(8)
         } else {
             Text("—")
@@ -303,9 +314,18 @@ struct MatchCell: View {
     let match: Match
     let teams: [Team]
     let groupColor: Color
+    let onTap: () -> Void
+    
+    init(match: Match, teams: [Team], groupColor: Color, onTap: @escaping () -> Void = {}) {
+        self.match = match
+        self.teams = teams
+        self.groupColor = groupColor
+        self.onTap = onTap
+    }
     
     var body: some View {
-        VStack(spacing: 4) {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
             // Group indicator and status
             HStack {
                 Text("Group \(match.groupId ?? "")")
@@ -349,6 +369,8 @@ struct MatchCell: View {
             RoundedRectangle(cornerRadius: 6)
                 .stroke(groupColor.opacity(0.3), lineWidth: 1)
         )
+        }
+        .buttonStyle(.plain)
     }
     
     @ViewBuilder

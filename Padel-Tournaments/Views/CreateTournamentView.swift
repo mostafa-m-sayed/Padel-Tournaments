@@ -56,7 +56,9 @@ struct CreateTournamentView: View {
             }
             .navigationDestination(isPresented: $showingSchedule) {
                 if let tournamentId = viewModel.createdTournamentId {
-                    ScheduleView(tournamentId: tournamentId)
+                    // Navigate to TournamentDetailView instead of directly to ScheduleView
+                    // We need to get the full tournament object first
+                    TournamentDetailWrapperView(tournamentId: tournamentId)
                 }
             }
             .onChange(of: viewModel.createdTournamentId) { _, newValue in
@@ -141,6 +143,75 @@ struct ProgressBarView: View {
         case .basicInfo: return "Tournament Details"
         case .teamSetup: return "Add Teams"
         case .groupAssignment: return "Assign Groups"
+        }
+    }
+}
+
+struct TournamentDetailWrapperView: View {
+    let tournamentId: String
+    @State private var tournament: Tournament?
+    @State private var isLoading = true
+    @State private var error: Error?
+    
+    private let tournamentRepository: TournamentRepositoryProtocol = TournamentRepository()
+    
+    var body: some View {
+        Group {
+            if isLoading {
+                ProgressView("Loading tournament...")
+            } else if let error = error {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(.orange)
+                    
+                    Text("Failed to load tournament")
+                        .font(.headline)
+                    
+                    Text(error.localizedDescription)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    Button("Try Again") {
+                        loadTournament()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+            } else if let tournament = tournament {
+                TournamentDetailView(tournament: tournament)
+            } else {
+                Text("Tournament not found")
+            }
+        }
+        .task {
+            loadTournament()
+        }
+    }
+    
+    private func loadTournament() {
+        isLoading = true
+        error = nil
+        
+        Task {
+            do {
+                print("📱 Loading tournament details for ID: \(tournamentId)")
+                let fetchedTournament = try await tournamentRepository.fetchTournamentDetails(id: tournamentId)
+                print("📱 Tournament loaded: \(fetchedTournament.name)")
+                print("📱 Teams: \(fetchedTournament.teams.count), Groups: \(fetchedTournament.groups.count), Matches: \(fetchedTournament.matches.count)")
+                
+                await MainActor.run {
+                    self.tournament = fetchedTournament
+                    self.isLoading = false
+                }
+            } catch {
+                print("❌ Error loading tournament: \(error)")
+                await MainActor.run {
+                    self.error = error
+                    self.isLoading = false
+                }
+            }
         }
     }
 }

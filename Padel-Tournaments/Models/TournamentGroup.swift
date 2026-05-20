@@ -1,12 +1,12 @@
 //
-//  Group.swift
+//  TournamentGroup.swift
 //  Padel-Tournaments
 //
 //  Created by Mostafa Sayed on 12/05/2026.
 //
 
 
-struct Group: Identifiable, Codable {
+struct TournamentGroup: Identifiable, Codable {
     let id: String
     var name: String        // "A" or "B"
     var teamIds: [String]

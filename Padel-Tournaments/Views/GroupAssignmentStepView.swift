@@ -68,9 +68,19 @@ struct GroupAssignmentStepView: View {
                         Image(systemName: "info.circle")
                             .foregroundColor(.orange)
                         
-                        Text("Each group must have equal number of teams")
-                            .font(.caption)
-                            .foregroundColor(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            if !viewModel.unassignedTeams.isEmpty {
+                                Text("All teams must be assigned to groups")
+                            }
+                            if viewModel.groupA.isEmpty || viewModel.groupB.isEmpty {
+                                Text("Both groups must have at least one team")
+                            }
+                            if !viewModel.groupA.isEmpty && !viewModel.groupB.isEmpty && viewModel.groupA.count != viewModel.groupB.count {
+                                Text("Groups must have equal number of teams")
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundColor(.orange)
                         
                         Spacer()
                     }
@@ -114,7 +124,7 @@ struct GroupAssignmentStepView: View {
                             draggedTeam: $draggedTeam,
                             onTeamTap: { team in
                                 // Auto-assign to group with fewer teams
-                                let targetGroup: TournamentGroup = viewModel.groupA.count <= viewModel.groupB.count ? .groupA : .groupB
+                                let targetGroup: TournamentGroupType = viewModel.groupA.count <= viewModel.groupB.count ? .groupA : .groupB
                                 withAnimation(.spring()) {
                                     viewModel.assignTeamToGroup(team, group: targetGroup)
                                 }

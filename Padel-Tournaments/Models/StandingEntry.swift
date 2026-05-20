@@ -16,11 +16,11 @@ struct StandingEntry: Identifiable {
 
     var matchesPlayed: Int { wins + losses }
 
-    // Tiebreaker priority: wins → pointsFor → fewest losses
+    // Tiebreaker priority: pointsFor → wins → fewest losses
     static func sorted(_ entries: [StandingEntry]) -> [StandingEntry] {
         entries.sorted {
-            if $0.wins != $1.wins         { return $0.wins > $1.wins }
             if $0.pointsFor != $1.pointsFor { return $0.pointsFor > $1.pointsFor }
+            if $0.wins != $1.wins         { return $0.wins > $1.wins }
             return $0.losses < $1.losses
         }
     }

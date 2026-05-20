@@ -81,7 +81,7 @@ final class CreateTournamentViewModel: ObservableObject {
         groupB.removeAll { $0.id == teamToRemove.id }
     }
     
-    func assignTeamToGroup(_ team: Team, group: TournamentGroup) {
+    func assignTeamToGroup(_ team: Team, group: TournamentGroupType) {
         // Remove from both groups first
         groupA.removeAll { $0.id == team.id }
         groupB.removeAll { $0.id == team.id }
@@ -118,7 +118,9 @@ final class CreateTournamentViewModel: ObservableObject {
         isLoading = true
         error = nil
         
-        // Create groups dynamically based on numberOfGroups
+        print("🏆 Starting tournament creation...")
+        
+        // Create groups using the manually assigned teams from groupA and groupB
         let groups = createGroups()
         
         // Generate matches using ScheduleEngine
@@ -153,33 +155,35 @@ final class CreateTournamentViewModel: ObservableObject {
                 groups: groups, 
                 matches: matchesWithCourts
             )
+            print("✅ Tournament created successfully with ID: \(tournamentId)")
             createdTournamentId = tournamentId
         } catch {
+            print("❌ Failed to create tournament: \(error)")
             self.error = error
         }
         
         isLoading = false
     }
     
-    /// Creates groups dynamically based on numberOfGroups
-    private func createGroups() -> [Group] {
-        let groupNames = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ".prefix(numberOfGroups))
-        var groups: [Group] = []
+    /// Creates groups using the manually assigned teams from groupA and groupB
+    private func createGroups() -> [TournamentGroup] {
+        var groups: [TournamentGroup] = []
         
-        // Distribute teams evenly across groups
-        let shuffledTeams = teams.shuffled()
-        let teamsPerGroup = teams.count / numberOfGroups
-        let extraTeams = teams.count % numberOfGroups
+        // Create Group A with manually assigned teams
+        if !groupA.isEmpty {
+            groups.append(TournamentGroup(
+                id: "A",
+                name: "A",
+                teamIds: groupA.map { $0.id }
+            ))
+        }
         
-        for (index, groupName) in groupNames.enumerated() {
-            let startIndex = index * teamsPerGroup + min(index, extraTeams)
-            let endIndex = startIndex + teamsPerGroup + (index < extraTeams ? 1 : 0)
-            
-            let groupTeams = Array(shuffledTeams[startIndex..<endIndex])
-            groups.append(Group(
-                id: String(groupName),
-                name: String(groupName),
-                teamIds: groupTeams.map { $0.id }
+        // Create Group B with manually assigned teams
+        if !groupB.isEmpty {
+            groups.append(TournamentGroup(
+                id: "B",
+                name: "B", 
+                teamIds: groupB.map { $0.id }
             ))
         }
         
@@ -195,7 +199,14 @@ final class CreateTournamentViewModel: ObservableObject {
     }
     
     var canCreateTournament: Bool {
-        !groupA.isEmpty && !groupB.isEmpty && groupA.count == groupB.count
+        // All teams must be assigned to groups
+        let allTeamsAssigned = unassignedTeams.isEmpty
+        // Both groups must have teams
+        let bothGroupsHaveTeams = !groupA.isEmpty && !groupB.isEmpty
+        // Groups must have equal number of teams
+        let equalGroups = groupA.count == groupB.count
+        
+        return allTeamsAssigned && bothGroupsHaveTeams && equalGroups
     }
     
     var unassignedTeams: [Team] {
@@ -204,7 +215,7 @@ final class CreateTournamentViewModel: ObservableObject {
     }
 }
 
-enum TournamentGroup {
+enum TournamentGroupType {
     case groupA
     case groupB
 }

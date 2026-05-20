@@ -140,19 +140,7 @@ struct TournamentRowView: View {
     }
 }
 
-struct StatusBadge: View {
-    let status: TournamentStatus
-    
-    var body: some View {
-        Text(status.displayName)
-            .font(.caption.bold())
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(status.color)
-            .foregroundColor(.white)
-            .cornerRadius(6)
-    }
-}
+
 
 #Preview {
     NavigationStack {

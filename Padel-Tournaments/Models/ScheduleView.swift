@@ -11,6 +11,7 @@ struct ScheduleView: View {
     let tournamentId: String
     @StateObject private var viewModel: ScheduleViewModel
     @State private var isReorderingEnabled = false
+    @State private var selectedMatch: Match?
     
     init(tournamentId: String) {
         self.tournamentId = tournamentId
@@ -92,6 +93,23 @@ struct ScheduleView: View {
         .sheet(isPresented: $viewModel.showTableView) {
             ScheduleTableView(tournamentId: tournamentId)
         }
+        .sheet(item: $selectedMatch) { match in
+            if let tournament = viewModel.tournament {
+                ScoreEntryView(
+                    match: match,
+                    teams: tournament.teams,
+                    tournament: tournament
+                ) { score1, score2 in
+                    Task {
+                        await viewModel.updateMatchScore(
+                            matchId: match.id,
+                            score1: score1,
+                            score2: score2
+                        )
+                    }
+                }
+            }
+        }
     }
     
     @ViewBuilder
@@ -164,8 +182,7 @@ struct ScheduleView: View {
                         teams: viewModel.tournament?.teams ?? [],
                         isReorderingEnabled: isReorderingEnabled,
                         onMatchTap: { match in
-                            // Navigate to score entry
-                            print("Tapped match: \(match.id)")
+                            selectedMatch = match
                         },
                         onMatchReorder: { matches in
                             Task {

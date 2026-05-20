@@ -6,6 +6,8 @@
 //
 
 import Combine
+import Firebase
+import FirebaseFirestore
 
 @MainActor
 final class ScheduleViewModel: ObservableObject {
@@ -16,6 +18,8 @@ final class ScheduleViewModel: ObservableObject {
     
     private let tournamentId: String
     private let tournamentRepository: TournamentRepositoryProtocol
+    private var matchesListener: ListenerRegistration?
+    private var tournamentListener: ListenerRegistration?
     
     init(tournamentId: String, tournamentRepository: TournamentRepositoryProtocol) {
         self.tournamentId = tournamentId
@@ -26,17 +30,59 @@ final class ScheduleViewModel: ObservableObject {
         self.init(tournamentId: tournamentId, tournamentRepository: TournamentRepository())
     }
     
+    deinit {
+        matchesListener?.remove()
+        tournamentListener?.remove()
+    }
+    
     func loadTournament() async {
         isLoading = true
         error = nil
         
         do {
             tournament = try await tournamentRepository.fetchTournamentDetails(id: tournamentId)
+            startRealTimeListeners()
         } catch {
             self.error = error
         }
         
         isLoading = false
+    }
+    
+    private func startRealTimeListeners() {
+        stopListening() // Clean up any existing listeners
+        
+        // Listen to tournament changes
+        tournamentListener = tournamentRepository.listenToTournament(tournamentId: tournamentId) { [weak self] updatedTournament in
+            Task { @MainActor in
+                if let updatedTournament = updatedTournament {
+                    // Preserve teams, groups, and matches if they exist
+                    if let currentTournament = self?.tournament {
+                        var newTournament = updatedTournament
+                        newTournament.teams = currentTournament.teams
+                        newTournament.groups = currentTournament.groups
+                        newTournament.matches = currentTournament.matches
+                        self?.tournament = newTournament
+                    } else {
+                        self?.tournament = updatedTournament
+                    }
+                }
+            }
+        }
+        
+        // Listen to match changes
+        matchesListener = tournamentRepository.listenToMatches(tournamentId: tournamentId) { [weak self] updatedMatches in
+            Task { @MainActor in
+                self?.tournament?.matches = updatedMatches
+            }
+        }
+    }
+    
+    private func stopListening() {
+        matchesListener?.remove()
+        tournamentListener?.remove()
+        matchesListener = nil
+        tournamentListener = nil
     }
     
     func reorderMatches(_ newMatches: [Match]) async {
@@ -118,17 +164,21 @@ final class ScheduleViewModel: ObservableObject {
     
     func updateMatchScore(matchId: String, score1: Int, score2: Int) async {
         do {
+            // Handle score clearing (when both scores are 0)
+            let finalScore1 = (score1 == 0 && score2 == 0) ? nil : score1
+            let finalScore2 = (score1 == 0 && score2 == 0) ? nil : score2
+            
             try await tournamentRepository.updateMatchScore(
                 tournamentId: tournamentId, 
                 matchId: matchId, 
-                score1: score1, 
-                score2: score2
+                score1: finalScore1, 
+                score2: finalScore2
             )
             
             // Update local state
             if let matchIndex = tournament?.matches.firstIndex(where: { $0.id == matchId }) {
-                tournament?.matches[matchIndex].score1 = score1
-                tournament?.matches[matchIndex].score2 = score2
+                tournament?.matches[matchIndex].score1 = finalScore1
+                tournament?.matches[matchIndex].score2 = finalScore2
             }
             
         } catch {

@@ -20,7 +20,7 @@ struct Tournament: Identifiable, Codable {
     // Not stored in this document — fetched as subcollections
     // kept here for in-memory convenience after loading
     var teams: [Team] = []
-    var groups: [Group] = []
+    var groups: [TournamentGroup] = []
     var matches: [Match] = []
 }
 

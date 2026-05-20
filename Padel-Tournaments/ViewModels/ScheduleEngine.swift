@@ -10,7 +10,7 @@ import Foundation
 struct ScheduleEngine {
     
     /// Generates matches for groups in a round-robin format
-    static func generateMatches(groups: [Group], courts: Int) -> [Match] {
+    static func generateMatches(groups: [TournamentGroup], courts: Int) -> [Match] {
         var allMatches: [Match] = []
         
         for group in groups {
@@ -28,8 +28,8 @@ struct ScheduleEngine {
     /// Legacy method for backward compatibility
     static func generateMatches(groupA: [Team], groupB: [Team], courts: Int) -> [Match] {
         let groups = [
-            Group(id: "A", name: "A", teamIds: groupA.map { $0.id }),
-            Group(id: "B", name: "B", teamIds: groupB.map { $0.id })
+            TournamentGroup(id: "A", name: "A", teamIds: groupA.map { $0.id }),
+            TournamentGroup(id: "B", name: "B", teamIds: groupB.map { $0.id })
         ]
         
         return generateMatches(groups: groups, courts: courts)

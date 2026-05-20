@@ -44,9 +44,9 @@ struct TournamentDetailView: View {
                 
                 // Stats Row
                 HStack {
-                    StatCard(title: "Teams", value: "\(tournament.teams.count)")
-                    StatCard(title: "Groups", value: "\(tournament.groups.count)")
-                    StatCard(title: "Matches", value: "\(tournament.matches.count)")
+                    StatCard(title: "Teams", value: "\(tournament.teams.count)", color: .accentColor)
+                    StatCard(title: "Groups", value: "\(tournament.groups.count)", color: .accentColor)
+                    StatCard(title: "Matches", value: "\(tournament.matches.count)", color: .accentColor)
                 }
             }
             .padding()
@@ -75,64 +75,6 @@ struct TournamentDetailView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct StatCard: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2.bold())
-                .foregroundColor(.accentColor)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.gray.opacity(0.1))
-        .cornerRadius(8)
-    }
-}
-
-// Placeholder views for the tabs
-struct TournamentOverviewView: View {
-    let tournament: Tournament
-    
-    var body: some View {
-        VStack {
-            Text("Tournament Overview")
-            Text("Coming soon...")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct TournamentStandingsView: View {
-    let tournament: Tournament
-    
-    var body: some View {
-        VStack {
-            Text("Tournament Standings")
-            Text("Coming soon...")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct TournamentMatchesView: View {
-    let tournament: Tournament
-    
-    var body: some View {
-        VStack {
-            Text("Tournament Matches")
-            Text("Coming soon...")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
