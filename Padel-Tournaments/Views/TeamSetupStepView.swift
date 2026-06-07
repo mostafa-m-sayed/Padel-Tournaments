@@ -80,9 +80,30 @@ struct TeamSetupStepView: View {
             }
             
             // Add Team Button
-            VStack {
+            VStack(spacing: 12) {
                 PrimaryButton(title: "Add Team") {
                     showAddTeamSheet = true
+                }
+                .padding(.horizontal)
+                
+                // TODO: DELETE - Testing button for development only
+                Button(action: {
+                    createTestingTeams()
+                }) {
+                    HStack {
+                        Image(systemName: "wrench.and.screwdriver")
+                        Text("Add 10 Test Teams")
+                    }
+                    .font(.caption.bold())
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(.orange.opacity(0.1))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(.orange.opacity(0.3), lineWidth: 1)
+                    )
                 }
                 .padding(.horizontal)
                 .padding(.bottom)
@@ -120,6 +141,40 @@ struct TeamSetupStepView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.ultraThinMaterial)
+    }
+    
+    // TODO: DELETE - Testing function for development only
+    private func createTestingTeams() {
+        let teamNames = [
+            ("Alice", "Brown"),      // Team A1
+            ("Bob", "Clark"),        // Team B2
+            ("Charlie", "Davis"),    // Team C3
+            ("Diana", "Evans"),      // Team D4
+            ("Eve", "Foster"),       // Team E5
+            ("Frank", "Green"),      // Team F6
+            ("Grace", "Hill"),       // Team G7
+            ("Henry", "Jones"),      // Team H8
+            ("Ivy", "King"),         // Team I9
+            ("Jack", "Lee")          // Team J10
+        ]
+        
+        for (index, (firstName, lastName)) in teamNames.enumerated() {
+            let teamNumber = index + 1
+            let teamName = "Team \(firstName.first!)\(teamNumber)"
+            
+            // Create players with first letter of first name + team number pattern
+            let player1Name = "\(firstName) \(teamNumber)"
+            let player2Name = "\(lastName) \(teamNumber)"
+            
+            print("🧪 Creating test team: \(teamName) - \(player1Name) & \(player2Name)")
+            
+            viewModel.addTeam(
+                player1Name: player1Name,
+                player2Name: player2Name
+            )
+        }
+        
+        print("🧪 Created \(teamNames.count) test teams successfully!")
     }
 }
 

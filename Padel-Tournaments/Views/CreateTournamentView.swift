@@ -180,7 +180,7 @@ struct TournamentDetailWrapperView: View {
                 }
                 .padding()
             } else if let tournament = tournament {
-                TournamentDetailView(tournament: tournament)
+                TournamentDetailView(initialTournament: tournament)
             } else {
                 Text("Tournament not found")
             }

@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct TournamentDetailView: View {
-    let tournament: Tournament
+    let initialTournament: Tournament
+    @StateObject private var viewModel = TournamentDetailViewModel()
     @State private var selectedTab = 0
     
     var body: some View {
@@ -17,11 +18,11 @@ struct TournamentDetailView: View {
             VStack(spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(tournament.name)
+                        Text(currentTournament.name)
                             .font(.title.bold())
                         
                         HStack {
-                            StatusBadge(status: tournament.status)
+                            StatusBadge(status: currentTournament.status)
                             Spacer()
                         }
                     }
@@ -29,11 +30,11 @@ struct TournamentDetailView: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(tournament.courts) Courts")
+                        Text("\(currentTournament.courts) Courts")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Text(tournament.setType.rawValue.capitalized)
+                        Text(currentTournament.setType.rawValue.capitalized)
                             .font(.caption)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -44,9 +45,9 @@ struct TournamentDetailView: View {
                 
                 // Stats Row
                 HStack {
-                    StatCard(title: "Teams", value: "\(tournament.teams.count)", color: .accentColor)
-                    StatCard(title: "Groups", value: "\(tournament.groups.count)", color: .accentColor)
-                    StatCard(title: "Matches", value: "\(tournament.matches.count)", color: .accentColor)
+                    StatCard(title: "Teams", value: "\(currentTournament.teams.count)", color: .accentColor)
+                    StatCard(title: "Groups", value: "\(currentTournament.groups.count)", color: .accentColor)
+                    StatCard(title: "Matches", value: "\(currentTournament.matches.count)", color: .accentColor)
                 }
             }
             .padding()
@@ -63,25 +64,36 @@ struct TournamentDetailView: View {
             
             // Tab Content
             TabView(selection: $selectedTab) {
-                TournamentOverviewView(tournament: tournament)
+                TournamentOverviewView(tournament: currentTournament)
                     .tag(0)
                 
-                TournamentStandingsView(tournament: tournament)
+                TournamentStandingsView(tournament: currentTournament)
                     .tag(1)
                 
-                TournamentMatchesView(tournament: tournament)
+                TournamentMatchesView(tournament: currentTournament)
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.startListening(tournamentId: initialTournament.id)
+            viewModel.tournament = initialTournament // Set initial data
+        }
+        .onDisappear {
+            viewModel.stopListening()
+        }
+    }
+    
+    private var currentTournament: Tournament {
+        viewModel.tournament ?? initialTournament
     }
 }
 
 #Preview {
     NavigationStack {
         TournamentDetailView(
-            tournament: Tournament(
+            initialTournament: Tournament(
                 id: "1",
                 name: "Summer Championship",
                 courts: 3,

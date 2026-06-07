@@ -12,17 +12,25 @@ import FirebaseFirestore
 
 @MainActor
 final class StandingsViewModel: ObservableObject {
+    typealias GroupStanding = (groupName: String, standings: [StandingEntry])
+    
     @Published var standingsByGroup: [String: [StandingEntry]] = [:]
     @Published var tournament: Tournament?
     @Published var isLoading = false
     @Published var error: Error?
+    @Published var showKnockoutAdvancement = false
+    @Published var canAdvanceToKnockout = false
+    @Published var showAdvancementAlert = false
     
     private let tournamentRepository: TournamentRepositoryProtocol
+    private let progressionManager: TournamentProgressionManagerProtocol
     private var matchesListener: ListenerRegistration?
     private var tournamentListener: ListenerRegistration?
     
-    init(tournamentRepository: TournamentRepositoryProtocol = TournamentRepository()) {
+    init(tournamentRepository: TournamentRepositoryProtocol = TournamentRepository(),
+         progressionManager: TournamentProgressionManagerProtocol = TournamentProgressionManager()) {
         self.tournamentRepository = tournamentRepository
+        self.progressionManager = progressionManager
     }
     
     deinit {
@@ -157,6 +165,9 @@ final class StandingsViewModel: ObservableObject {
         }
         
         self.standingsByGroup = standingsByGroup
+        
+        // Check if we can advance to knockout stage
+        checkForKnockoutAdvancement()
     }
     
     // Helper computed properties
@@ -178,5 +189,61 @@ final class StandingsViewModel: ObservableObject {
     
     func refreshData(tournamentId: String) {
         startListening(tournamentId: tournamentId)
+    }
+    
+    // MARK: - Tournament Progression
+    
+    private func checkForKnockoutAdvancement() {
+        guard let tournament = tournament else {
+            canAdvanceToKnockout = false
+            return
+        }
+        
+        canAdvanceToKnockout = progressionManager.canAdvanceToKnockout(tournament: tournament)
+        
+        // Auto-show advancement option if conditions are met
+        if canAdvanceToKnockout && tournament.status == .groupStage {
+            print("🎯 SETTING showKnockoutAdvancement to true")
+            showKnockoutAdvancement = true
+            print("🎯 showKnockoutAdvancement is now: \(showKnockoutAdvancement)")
+            
+            // Force UI refresh
+            objectWillChange.send()
+        }
+    }
+    
+    var isGroupStageComplete: Bool {
+        guard let tournament = tournament else { return false }
+        return progressionManager.isGroupStageComplete(tournament: tournament)
+    }
+    
+    func advanceToKnockoutStage() async {
+        guard let tournament = tournament else { return }
+        
+        isLoading = true
+        error = nil
+        
+        do {
+            let updatedTournament = try await progressionManager.advanceToKnockoutStage(
+                tournament: tournament,
+                topTeamsPerGroup: topTeamsPerGroup
+            )
+            
+            self.tournament = updatedTournament
+            showKnockoutAdvancement = false
+            canAdvanceToKnockout = false
+            
+            print("🏆 Successfully advanced to knockout stage!")
+            
+        } catch {
+            self.error = error
+            print("❌ Failed to advance to knockout stage: \(error)")
+        }
+        
+        isLoading = false
+    }
+    
+    func dismissKnockoutAdvancement() {
+        showKnockoutAdvancement = false
     }
 }

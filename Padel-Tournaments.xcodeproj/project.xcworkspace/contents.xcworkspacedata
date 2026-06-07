@@ -4,4 +4,10 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:AppIconSetupGuide.md">
+   </FileRef>
+   <FileRef
+      location = "group:TemporaryAppIcon.swift">
+   </FileRef>
 </Workspace>

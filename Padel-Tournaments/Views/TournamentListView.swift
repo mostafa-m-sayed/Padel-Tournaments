@@ -88,7 +88,7 @@ struct TournamentListView: View {
         List {
             ForEach(viewModel.tournaments) { tournament in
                 NavigationLink {
-                    TournamentDetailView(tournament: tournament)
+                    TournamentDetailView(initialTournament: tournament)
                 } label: {
                     TournamentRowView(tournament: tournament)
                 }
