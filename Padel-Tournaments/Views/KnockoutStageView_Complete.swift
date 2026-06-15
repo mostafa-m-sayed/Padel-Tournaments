@@ -25,6 +25,11 @@ struct KnockoutStageView: View {
                 // Header with tournament info
                 headerView
                 
+                // Tournament completion celebration (if tournament is complete)
+                if finalMatch?.isPlayed == true && !viewModel.topThreeTeams.isEmpty {
+                    tournamentCompleteCelebration
+                }
+                
                 // Tournament progress indicator
                 progressView
                 
@@ -64,9 +69,84 @@ struct KnockoutStageView: View {
         .onDisappear {
             viewModel.stopListening()
         }
+        .sheet(isPresented: $viewModel.showTournamentResults) {
+            if let tournament = viewModel.tournament {
+                TournamentResultsShareView(
+                    tournament: tournament,
+                    topTeams: viewModel.topThreeTeams,
+                    finalScore: viewModel.finalMatchScore
+                )
+            }
+        }
     }
     
     // MARK: - View Components
+    
+    @ViewBuilder
+    private var tournamentCompleteCelebration: some View {
+        VStack(spacing: 16) {
+            // Celebration header
+            VStack(spacing: 8) {
+                Text("🎉 TOURNAMENT COMPLETE! 🎉")
+                    .font(.title2.bold())
+                    .foregroundColor(.green)
+                    .tracking(1)
+                
+                if let winner = viewModel.tournamentWinner {
+                    HStack(spacing: 8) {
+                        Text("🏆")
+                            .font(.title)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("CHAMPIONS")
+                                .font(.caption.bold())
+                                .foregroundColor(.yellow)
+                                .tracking(1)
+                            
+                            Text("\(winner.player1.name) & \(winner.player2.name)")
+                                .font(.title3.bold())
+                                .foregroundColor(.primary)
+                        }
+                        
+                        Text("🏆")
+                            .font(.title)
+                    }
+                }
+            }
+            
+            // Share results button
+            Button(action: {
+                viewModel.showTournamentResults = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title2)
+                    
+                    Text("Share Tournament Results")
+                        .font(.headline.bold())
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [.green, .blue]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(25)
+                .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+        }
+        .padding()
+        .background(.green.opacity(0.1))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.green.opacity(0.3), lineWidth: 2)
+        )
+    }
     
     @ViewBuilder
     private var headerView: some View {

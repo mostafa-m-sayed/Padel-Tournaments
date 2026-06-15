@@ -15,6 +15,10 @@ final class KnockoutStageViewModel: ObservableObject {
     @Published var tournament: Tournament?
     @Published var isLoading = false
     @Published var error: Error?
+    @Published var showTournamentResults = false
+    @Published var tournamentWinner: Team?
+    @Published var topThreeTeams: [Team] = []
+    @Published var finalMatchScore: (team1Score: Int, team2Score: Int)?
     
     private let tournamentId: String
     private let tournamentRepository: TournamentRepositoryProtocol
@@ -173,6 +177,56 @@ final class KnockoutStageViewModel: ObservableObject {
                 await updateBracketWithSemifinalResults()
             }
         }
+        
+        // Check if tournament is complete (final match finished)
+        checkTournamentCompletion()
+    }
+    
+    private func checkTournamentCompletion() {
+        guard let tournament = tournament else { return }
+        
+        // Find the final match
+        if let finalMatch = tournament.matches.first(where: { $0.stage == .final }),
+           finalMatch.isPlayed {
+            
+            // Tournament is complete! Calculate final results
+            calculateFinalResults(tournament: tournament, finalMatch: finalMatch)
+            showTournamentResults = true
+        }
+    }
+    
+    private func calculateFinalResults(tournament: Tournament, finalMatch: Match) {
+        // Store final match score
+        finalMatchScore = (team1Score: finalMatch.score1 ?? 0, team2Score: finalMatch.score2 ?? 0)
+        
+        // Determine top 3 teams
+        var results: [Team] = []
+        
+        // 1st Place - Winner of final
+        let finalWinnerId = (finalMatch.score1 ?? 0) > (finalMatch.score2 ?? 0) ? finalMatch.team1Id : finalMatch.team2Id
+        if let winner = tournament.teams.first(where: { $0.id == finalWinnerId }) {
+            results.append(winner)
+            tournamentWinner = winner
+        }
+        
+        // 2nd Place - Loser of final
+        let finalLoserId = (finalMatch.score1 ?? 0) > (finalMatch.score2 ?? 0) ? finalMatch.team2Id : finalMatch.team1Id
+        if let runnerUp = tournament.teams.first(where: { $0.id == finalLoserId }) {
+            results.append(runnerUp)
+        }
+        
+        // 3rd Place - Winner of third place match (if exists)
+        if let thirdPlaceMatch = tournament.matches.first(where: { $0.stage == .thirdPlace }),
+           thirdPlaceMatch.isPlayed {
+            let thirdPlaceWinnerId = (thirdPlaceMatch.score1 ?? 0) > (thirdPlaceMatch.score2 ?? 0) ? 
+                                   thirdPlaceMatch.team1Id : thirdPlaceMatch.team2Id
+            if let thirdPlace = tournament.teams.first(where: { $0.id == thirdPlaceWinnerId }) {
+                results.append(thirdPlace)
+            }
+        }
+        
+        topThreeTeams = results
+        print("🏆 Tournament Complete! Winner: \(tournamentWinner?.displayName ?? "Unknown")")
     }
     
     private func checkBracketProgression(for match: Match) async {
