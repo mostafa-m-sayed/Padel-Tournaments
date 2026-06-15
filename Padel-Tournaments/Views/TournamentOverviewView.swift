@@ -148,6 +148,7 @@ struct TournamentOverviewView: View {
                 .cornerRadius(16)
             }
             .padding()
+            .padding(.bottom, 20) // Extra bottom padding for tab area
         }
         .alert("Fill Random Scores", isPresented: $showingAlert) {
             Button("OK") { }

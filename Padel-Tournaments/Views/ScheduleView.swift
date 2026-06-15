@@ -35,8 +35,9 @@ struct ScheduleView: View {
                     }
                     Spacer()
                 } else {
-                    // Matches list
+                    // Matches list - explicitly take remaining space
                     matchesListView
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .navigationTitle("Schedule")
@@ -192,8 +193,10 @@ struct ScheduleView: View {
                     )
                 }
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.bottom)
         }
+        .clipped() // Ensure ScrollView respects boundaries
     }
 }
 

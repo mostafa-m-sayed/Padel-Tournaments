@@ -68,9 +68,6 @@ struct KnockoutAdvancementSheet: View {
                 .font(.system(size: 60))
                 .foregroundColor(.yellow)
             
-            Text("Knockout Stage")
-                .font(.largeTitle.bold())
-            
             Text("Advance the top 2 teams from each group to the semi-finals")
                 .font(.subheadline)
                 .foregroundColor(.secondary)

@@ -10,6 +10,7 @@ import SwiftUI
 struct TournamentStandingsView: View {
     let tournament: Tournament
     @StateObject private var standingsViewModel = StandingsViewModel()
+    @State private var showKnockoutSheet = false
     
     var body: some View {
         ScrollView {
@@ -19,6 +20,9 @@ struct TournamentStandingsView: View {
                 } else if standingsViewModel.groupStandings.isEmpty {
                     emptyStateView
                 } else {
+                    // Knockout advancement button
+                    knockoutAdvancementButton
+                    
                     // Group standings
                     ForEach(standingsViewModel.groupStandings, id: \.groupName) { group in
                         groupStandingsView(
@@ -43,6 +47,9 @@ struct TournamentStandingsView: View {
             }
         } message: {
             Text(standingsViewModel.error?.localizedDescription ?? "")
+        }
+        .sheet(isPresented: $showKnockoutSheet) {
+            KnockoutAdvancementSheet(viewModel: standingsViewModel)
         }
     }
     
@@ -231,6 +238,69 @@ struct TournamentStandingsView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
     }
+    
+    // MARK: - Knockout Advancement Button
+    
+    @ViewBuilder
+    private var knockoutAdvancementButton: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: standingsViewModel.isGroupStageComplete ? "checkmark.circle.fill" : "clock.circle")
+                        .foregroundColor(standingsViewModel.isGroupStageComplete ? .green : .orange)
+                    
+                    Text(standingsViewModel.isGroupStageComplete ? "Ready for Knockout" : "Group stage in progress")
+                        .font(.headline)
+                        .foregroundColor(standingsViewModel.isGroupStageComplete ? .green : .orange)
+                }
+                
+                if !standingsViewModel.isGroupStageComplete {
+                    if let tournament = standingsViewModel.tournament {
+                        let groupMatches = tournament.matches.filter { $0.stage == .group }
+                        let playedMatches = groupMatches.filter { $0.isPlayed }
+                        
+                        Text("\(playedMatches.count) of \(groupMatches.count) group matches completed")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Group stage in progress...")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            Spacer()
+        }
+        
+        Button(action: {
+            showKnockoutSheet = true
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "chevron.right.circle.fill")
+                Text("View Knockout Details")
+            }
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: standingsViewModel.isGroupStageComplete ? [.green, .blue] : [.gray.opacity(0.6), .gray.opacity(0.8)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(25)
+            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 16)
+        .background(.regularMaterial)
+        .cornerRadius(16)
+    }
+    
+    // MARK: - Helper Methods
     
     private func groupColor(for groupName: String) -> Color {
         switch groupName {

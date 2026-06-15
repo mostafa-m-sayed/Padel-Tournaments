@@ -11,7 +11,8 @@ struct TournamentMatchesView: View {
     let tournament: Tournament
     
     var body: some View {
-        VStack(spacing: 20) {
+        ScrollView {
+            VStack(spacing: 20) {
                 // Quick matches overview
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Match Progress")
@@ -110,7 +111,9 @@ struct TournamentMatchesView: View {
                 Spacer()
             }
             .padding()
+            .padding(.bottom, 20) // Extra bottom padding for tab bar
         }
+    }
     
     
     private var completedMatches: Int {

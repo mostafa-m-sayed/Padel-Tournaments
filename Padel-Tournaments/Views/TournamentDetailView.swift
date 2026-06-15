@@ -11,6 +11,8 @@ struct TournamentDetailView: View {
     let initialTournament: Tournament
     @StateObject private var viewModel = TournamentDetailViewModel()
     @State private var selectedTab = 0
+    @State private var showingExitAlert = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         VStack(spacing: 0) {
@@ -74,8 +76,25 @@ struct TournamentDetailView: View {
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Back") {
+                    showingExitAlert = true
+                }
+            }
+        }
+        .alert("Leave Tournament", isPresented: $showingExitAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Leave", role: .destructive) {
+                dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to leave this tournament? You'll return to the main screen and will need to select or create a tournament again.")
+        }
         .onAppear {
             viewModel.startListening(tournamentId: initialTournament.id)
             viewModel.tournament = initialTournament // Set initial data
