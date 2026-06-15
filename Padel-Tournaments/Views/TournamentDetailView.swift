@@ -9,10 +9,16 @@ import SwiftUI
 
 struct TournamentDetailView: View {
     let initialTournament: Tournament
+    let showBackButton: Bool
     @StateObject private var viewModel = TournamentDetailViewModel()
     @State private var selectedTab = 0
     @State private var showingExitAlert = false
     @Environment(\.dismiss) private var dismiss
+    
+    init(initialTournament: Tournament, showBackButton: Bool = true) {
+        self.initialTournament = initialTournament
+        self.showBackButton = showBackButton
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -63,6 +69,9 @@ struct TournamentDetailView: View {
                 Text("Overview").tag(0)
                 Text("Standings").tag(1)
                 Text("Matches").tag(2)
+                if currentTournament.status == .knockout || currentTournament.status == .completed {
+                    Text("Knockout").tag(3)
+                }
             }
             .pickerStyle(.segmented)
             .padding()
@@ -72,21 +81,28 @@ struct TournamentDetailView: View {
                 TournamentOverviewView(tournament: currentTournament)
                     .tag(0)
                 
-                TournamentStandingsView(tournament: currentTournament)
+                TournamentStandingsView(tournament: currentTournament, selectedTab: $selectedTab)
                     .tag(1)
                 
                 TournamentMatchesView(tournament: currentTournament)
                     .tag(2)
+                
+                if currentTournament.status == .knockout || currentTournament.status == .completed {
+                    KnockoutStageView(tournament: currentTournament)
+                        .tag(3)
+                }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden()
+        .navigationBarBackButtonHidden(showBackButton) // Hide system back button when we show custom one
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Back") {
-                    showingExitAlert = true
+            if showBackButton {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Back") {
+                        showingExitAlert = true
+                    }
                 }
             }
         }

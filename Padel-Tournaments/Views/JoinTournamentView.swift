@@ -123,7 +123,7 @@ struct JoinTournamentView: View {
         .fullScreenCover(isPresented: $showingTournament) {
             if let tournament = viewModel.foundTournament {
                 NavigationStack {
-                    TournamentDetailView(initialTournament: tournament)
+                    TournamentDetailView(initialTournament: tournament, showBackButton: false)
                         .toolbar {
                             ToolbarItem(placement: .navigationBarLeading) {
                                 Button("Back to Home") {

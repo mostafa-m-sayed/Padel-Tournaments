@@ -53,33 +53,36 @@ struct TournamentOverviewView: View {
                 
                 // Navigation Actions
                 VStack(spacing: 12) {
-                    NavigationLink(destination: TournamentStandingsView(tournament: tournament)) {
+                    // Note: Standings are accessible via the main tab bar
+                    VStack(spacing: 8) {
                         HStack {
                             Image(systemName: "chart.bar.xaxis")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundColor(.blue)
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("View Standings")
                                     .font(.headline.bold())
-                                    .foregroundColor(.white)
                                 
-                                Text("Check team positions and group rankings")
+                                Text("Check team positions and group rankings in the Standings tab")
                                     .font(.caption)
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .foregroundColor(.secondary)
                             }
                             
                             Spacer()
                             
-                            Image(systemName: "chevron.right")
+                            Image(systemName: "arrow.up.circle.fill")
                                 .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundColor(.blue.opacity(0.6))
                         }
                         .padding()
-                        .background(.blue.gradient)
+                        .background(.blue.opacity(0.05))
                         .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.blue.opacity(0.2), lineWidth: 1)
+                        )
                     }
-                    .buttonStyle(.plain)
                     
                     // Test button for development
                     Button(action: fillRandomScores) {

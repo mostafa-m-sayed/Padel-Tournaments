@@ -252,7 +252,7 @@ struct StandingsView: View {
                 .font(.caption.bold())
                 .frame(width: 30)
             
-            Text("GD")
+            Text("PTS")
                 .font(.caption.bold())
                 .frame(width: 35)
         }
@@ -316,11 +316,10 @@ struct StandingsView: View {
                 .font(.subheadline)
                 .frame(width: 30)
             
-            // Goal Difference
-            Text("\(standing.pointsFor - standing.pointsAgainst)")
+            // Points For
+            Text("\(standing.pointsFor)")
                 .font(.subheadline.bold())
-                .foregroundColor(standing.pointsFor - standing.pointsAgainst > 0 ? .green : 
-                               standing.pointsFor - standing.pointsAgainst < 0 ? .red : .primary)
+                .foregroundColor(.blue)
                 .frame(width: 35)
         }
         .padding(.horizontal, 12)

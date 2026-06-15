@@ -212,7 +212,7 @@ struct GroupMatchesSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Group header
             HStack {
-                Text("Group \(groupId)")
+                Text(groupId == "Knockout" ? "Knockout Stage" : "Group \(groupId)")
                     .font(.headline.bold())
                     .foregroundColor(groupColor)
                 
@@ -260,7 +260,28 @@ struct GroupMatchesSection: View {
     }
     
     private var groupColor: Color {
-        groupId == "A" ? .blue : .green
+        switch groupId {
+        case "Knockout":
+            return .purple
+        case "A":
+            return .blue
+        case "B":
+            return .green
+        case "C":
+            return .orange
+        case "D":
+            return .red
+        case "E":
+            return .pink
+        case "F":
+            return .cyan
+        case "G":
+            return .indigo
+        case "H":
+            return .mint
+        default:
+            return .gray
+        }
     }
 }
 

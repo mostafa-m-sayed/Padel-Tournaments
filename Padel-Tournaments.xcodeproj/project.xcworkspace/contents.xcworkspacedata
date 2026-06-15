@@ -5,9 +5,18 @@
       location = "self:">
    </FileRef>
    <FileRef
-      location = "group:AppIconSetupGuide.md">
+      location = "group:KnockoutStageView.swift">
    </FileRef>
    <FileRef
-      location = "group:TemporaryAppIcon.swift">
+      location = "group:KnockoutViewModel.swift">
+   </FileRef>
+   <FileRef
+      location = "group:KnockoutScoreEntryView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:KnockoutStageView 2.swift">
+   </FileRef>
+   <FileRef
+      location = "group:KnockoutStageViewModel.swift">
    </FileRef>
 </Workspace>

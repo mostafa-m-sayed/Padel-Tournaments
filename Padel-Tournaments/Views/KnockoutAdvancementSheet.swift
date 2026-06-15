@@ -8,6 +8,8 @@ import SwiftUI
 struct KnockoutAdvancementSheet: View {
     @ObservedObject var viewModel: StandingsViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showKnockoutStage = false
+    @State private var advancementSuccessful = false
     
     var body: some View {
         NavigationView {
@@ -16,8 +18,12 @@ struct KnockoutAdvancementSheet: View {
                     // Header
                     headerView
                     
-                    // Status indicator
-                    statusIndicatorView
+                    // Status indicator or success message
+                    if advancementSuccessful {
+                        successMessageView
+                    } else {
+                        statusIndicatorView
+                    }
                     
                     // Qualified teams section
                     if viewModel.isGroupStageComplete {
@@ -50,12 +56,17 @@ struct KnockoutAdvancementSheet: View {
             Button("Advance") {
                 Task {
                     await viewModel.advanceToKnockoutStage()
-                    dismiss()
+                    advancementSuccessful = true
                 }
             }
             .disabled(viewModel.isLoading)
         } message: {
             Text("This will create semi-finals and finals matches with the top 2 teams from each group. This action cannot be undone.")
+        }
+        .sheet(isPresented: $showKnockoutStage) {
+            if let tournament = viewModel.tournament {
+                KnockoutStageView(tournament: tournament)
+            }
         }
     }
     
@@ -105,6 +116,30 @@ struct KnockoutAdvancementSheet: View {
     }
     
     @ViewBuilder
+    private var successMessageView: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2)
+                .foregroundColor(.green)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Knockout Stage Created!")
+                    .font(.headline)
+                    .foregroundColor(.green)
+                
+                Text("Semifinals and finals matches have been generated. You can now manage knockout matches.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .background(.green.opacity(0.1))
+        .cornerRadius(12)
+    }
+    
+    @ViewBuilder
     private var qualifiedTeamsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Qualified Teams")
@@ -140,7 +175,7 @@ struct KnockoutAdvancementSheet: View {
                             Text(standing.team.displayName)
                                 .font(.subheadline.bold())
                             
-                            Text("W: \(standing.wins) • L: \(standing.losses) • GD: \(standing.pointsFor - standing.pointsAgainst)")
+                            Text("W: \(standing.wins) • L: \(standing.losses) • PTS: \(standing.pointsFor)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -194,40 +229,74 @@ struct KnockoutAdvancementSheet: View {
     
     @ViewBuilder
     private var actionButtonView: some View {
-        Button(action: {
-            if viewModel.isGroupStageComplete {
-                viewModel.showAdvancementAlert = true
-            } else {
-                // Show some feedback that it's not ready
-                print("Group stage not complete yet!")
-            }
-        }) {
-            HStack(spacing: 12) {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.8)
-                } else {
-                    Image(systemName: viewModel.isGroupStageComplete ? "arrow.right.circle.fill" : "clock.circle.fill")
+        VStack(spacing: 12) {
+            if advancementSuccessful {
+                // Show knockout stage navigation after successful advancement
+                Button(action: {
+                    showKnockoutStage = true
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "play.circle.fill")
+                        Text("View Knockout Matches")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.purple, .blue]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                 }
                 
-                Text(viewModel.isGroupStageComplete ? "Advance to Knockout" : "Waiting for Group Stage")
-                    .font(.headline)
+                Button("Close") {
+                    dismiss()
+                }
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            } else {
+                // Original advancement button
+                Button(action: {
+                    if viewModel.isGroupStageComplete {
+                        viewModel.showAdvancementAlert = true
+                    } else {
+                        // Show some feedback that it's not ready
+                        print("Group stage not complete yet!")
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: viewModel.isGroupStageComplete ? "arrow.right.circle.fill" : "clock.circle.fill")
+                        }
+                        
+                        Text(viewModel.isGroupStageComplete ? "Advance to Knockout" : "Waiting for Group Stage")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: viewModel.isGroupStageComplete ? [.green, .blue] : [.gray, .gray]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                }
+                .disabled(!viewModel.isGroupStageComplete || viewModel.isLoading)
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: viewModel.isGroupStageComplete ? [.green, .blue] : [.gray, .gray]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
         }
-        .disabled(!viewModel.isGroupStageComplete || viewModel.isLoading)
     }
     
     // MARK: - Helper Methods

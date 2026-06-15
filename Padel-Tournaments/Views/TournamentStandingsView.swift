@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TournamentStandingsView: View {
     let tournament: Tournament
+    @Binding var selectedTab: Int // Add binding to control parent tab selection
     @StateObject private var standingsViewModel = StandingsViewModel()
     @State private var showKnockoutSheet = false
     
@@ -246,27 +247,33 @@ struct TournamentStandingsView: View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Image(systemName: standingsViewModel.isGroupStageComplete ? "checkmark.circle.fill" : "clock.circle")
-                        .foregroundColor(standingsViewModel.isGroupStageComplete ? .green : .orange)
+                    let statusInfo = getStatusInfo()
                     
-                    Text(standingsViewModel.isGroupStageComplete ? "Ready for Knockout" : "Group stage in progress")
+                    Image(systemName: statusInfo.icon)
+                        .foregroundColor(statusInfo.color)
+                    
+                    Text(statusInfo.text)
                         .font(.headline)
-                        .foregroundColor(standingsViewModel.isGroupStageComplete ? .green : .orange)
+                        .foregroundColor(statusInfo.color)
                 }
                 
-                if !standingsViewModel.isGroupStageComplete {
-                    if let tournament = standingsViewModel.tournament {
+                if let tournament = standingsViewModel.tournament {
+                    if tournament.status == .knockout || tournament.status == .completed {
+                        Text("Tournament has advanced to knockout stage")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else if !standingsViewModel.isGroupStageComplete {
                         let groupMatches = tournament.matches.filter { $0.stage == .group }
                         let playedMatches = groupMatches.filter { $0.isPlayed }
                         
                         Text("\(playedMatches.count) of \(groupMatches.count) group matches completed")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                    } else {
-                        Text("Group stage in progress...")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
                     }
+                } else {
+                    Text("Loading tournament status...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
             }
             
@@ -274,11 +281,20 @@ struct TournamentStandingsView: View {
         }
         
         Button(action: {
-            showKnockoutSheet = true
+            let tournament = standingsViewModel.tournament ?? self.tournament
+            if tournament.status == .knockout || tournament.status == .completed {
+                // Switch to knockout tab instead of showing sheet
+                selectedTab = 3
+            } else {
+                // Show advancement sheet for group stage
+                showKnockoutSheet = true
+            }
         }) {
+            let buttonInfo = getButtonInfo()
+            
             HStack(spacing: 8) {
-                Image(systemName: "chevron.right.circle.fill")
-                Text("View Knockout Details")
+                Image(systemName: buttonInfo.icon)
+                Text(buttonInfo.text)
             }
             .font(.headline)
             .foregroundColor(.white)
@@ -286,7 +302,7 @@ struct TournamentStandingsView: View {
             .padding(.vertical, 12)
             .background(
                 LinearGradient(
-                    gradient: Gradient(colors: standingsViewModel.isGroupStageComplete ? [.green, .blue] : [.gray.opacity(0.6), .gray.opacity(0.8)]),
+                    gradient: Gradient(colors: buttonInfo.colors),
                     startPoint: .leading,
                     endPoint: .trailing
                 )
@@ -301,6 +317,40 @@ struct TournamentStandingsView: View {
     }
     
     // MARK: - Helper Methods
+    
+    private func getStatusInfo() -> (text: String, icon: String, color: Color) {
+        guard let tournament = standingsViewModel.tournament else {
+            return ("Loading...", "clock.circle", .gray)
+        }
+        
+        switch tournament.status {
+        case .knockout, .completed:
+            return ("Tournament in Knockout Stage", "trophy.fill", .purple)
+        default:
+            if standingsViewModel.isGroupStageComplete {
+                return ("Ready for Knockout", "checkmark.circle.fill", .green)
+            } else {
+                return ("Group stage in progress", "clock.circle", .orange)
+            }
+        }
+    }
+    
+    private func getButtonInfo() -> (text: String, icon: String, colors: [Color]) {
+        guard let tournament = standingsViewModel.tournament else {
+            return ("View Details", "chevron.right.circle.fill", [.gray.opacity(0.6), .gray.opacity(0.8)])
+        }
+        
+        switch tournament.status {
+        case .knockout, .completed:
+            return ("View Knockout Stage", "trophy.circle.fill", [.purple, .blue])
+        default:
+            if standingsViewModel.isGroupStageComplete {
+                return ("Advance to Knockout", "arrow.right.circle.fill", [.green, .blue])
+            } else {
+                return ("View Knockout Details", "chevron.right.circle.fill", [.gray.opacity(0.6), .gray.opacity(0.8)])
+            }
+        }
+    }
     
     private func groupColor(for groupName: String) -> Color {
         switch groupName {
@@ -327,7 +377,8 @@ struct TournamentStandingsView: View {
 }
 
 #Preview {
-    TournamentStandingsView(
+    @State var selectedTab = 1
+    return TournamentStandingsView(
         tournament: Tournament(
             id: "preview-tournament",
             name: "Test Tournament",
@@ -337,6 +388,7 @@ struct TournamentStandingsView: View {
             status: .groupStage,
             createdAt: Date(),
             courtAssignmentStrategy: .automatic
-        )
+        ),
+        selectedTab: $selectedTab
     )
 }
