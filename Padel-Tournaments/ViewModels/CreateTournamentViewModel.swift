@@ -130,7 +130,7 @@ final class CreateTournamentViewModel: ObservableObject {
         )
         
         // Apply court assignment strategy
-        let tournamentId = UUID().uuidString
+        let tournamentId = generateShortTournamentId()
         let tournament = Tournament(
             id: tournamentId,
             name: tournamentName,
@@ -212,6 +212,26 @@ final class CreateTournamentViewModel: ObservableObject {
     var unassignedTeams: [Team] {
         let assignedTeamIds = Set(groupA.map { $0.id } + groupB.map { $0.id })
         return teams.filter { !assignedTeamIds.contains($0.id) }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Generates a short, user-friendly tournament ID (e.g., "PD2024A7")
+    private func generateShortTournamentId() -> String {
+        let prefix = "PD" // Padel identifier
+        let year = String(Date().year).suffix(4)
+        let randomString = String((0..<4).map { _ in
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()!
+        })
+        
+        return "\(prefix)\(year)\(randomString)"
+    }
+}
+
+// Helper extension for Date
+private extension Date {
+    var year: Int {
+        Calendar.current.component(.year, from: self)
     }
 }
 

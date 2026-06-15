@@ -45,6 +45,9 @@ struct TournamentDetailView: View {
                     }
                 }
                 
+                // Tournament ID Section
+                TournamentIdView(tournamentId: currentTournament.id)
+                
                 // Stats Row
                 HStack {
                     StatCard(title: "Teams", value: "\(currentTournament.teams.count)", color: .accentColor)
