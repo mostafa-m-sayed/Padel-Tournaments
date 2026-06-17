@@ -7,13 +7,14 @@
 
 import SwiftUI
 
-
-
 struct ScheduleTableView: View {
     let tournamentId: String
     @StateObject private var viewModel: ScheduleViewModel
     @State private var selectedGroup: String = "All"
     @State private var selectedMatch: Match?
+    @State private var pdfData: Data?
+    @State private var isGeneratingPDF = false
+    @State private var showShareSheet = false
     @Environment(\.dismiss) private var dismiss
     
     init(tournamentId: String) {
@@ -56,18 +57,25 @@ struct ScheduleTableView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button("Export as PDF") {
-                            // TODO: Implement PDF export
-                            print("Export as PDF")
+                        Button {
+                            exportAndShare()
+                        } label: {
+                            Label("Export as PDF", systemImage: "doc.richtext")
                         }
-                        
-                        Button("Share Schedule") {
-                            // TODO: Implement sharing
-                            print("Share schedule")
+
+                        Button {
+                            exportAndShare()
+                        } label: {
+                            Label("Share Schedule", systemImage: "square.and.arrow.up")
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        if isGeneratingPDF {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "ellipsis.circle")
+                        }
                     }
+                    .disabled(isGeneratingPDF)
                 }
             }
         }
@@ -97,8 +105,65 @@ struct ScheduleTableView: View {
                 }
             }
         }
+        .sheet(isPresented: $showShareSheet) {
+            if let data = pdfData {
+                let filename = pdfFilename()
+                let url = writePDFToTemp(data: data, filename: filename)
+                ShareSheet(items: [url].compactMap { $0 })
+            }
+        }
     }
     
+    // MARK: - PDF Export
+
+    private func exportAndShare() {
+        guard let tournament = viewModel.tournament else { return }
+        isGeneratingPDF = true
+
+        let groupLabel = selectedGroup == "All" ? "All Groups" : "Group \(selectedGroup)"
+        let rounds = filteredMatchesByRound
+        let courts = tournament.courts
+        let teams = tournament.teams
+        let showBadge = selectedGroup == "All"
+        let title = tournament.name
+
+        // Move PDF generation off the main thread to avoid any hitching.
+        Task.detached(priority: .userInitiated) {
+            let data = SchedulePDFExporter.generatePDF(
+                title: title,
+                groupLabel: groupLabel,
+                rounds: rounds,
+                courts: courts,
+                teams: teams,
+                showGroupBadge: showBadge
+            )
+            await MainActor.run {
+                self.pdfData = data
+                self.isGeneratingPDF = false
+                self.showShareSheet = true
+            }
+        }
+    }
+
+    private func pdfFilename() -> String {
+        let name = viewModel.tournament?.name
+            .replacingOccurrences(of: " ", with: "_") ?? "Schedule"
+        let group = selectedGroup == "All" ? "All_Groups" : "Group_\(selectedGroup)"
+        return "\(name)_\(group)_Schedule.pdf"
+    }
+
+    private func writePDFToTemp(data: Data, filename: String) -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        do {
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    // MARK: - Sub-views
+
     @ViewBuilder
     private var groupSelectorView: some View {
         VStack(spacing: 12) {

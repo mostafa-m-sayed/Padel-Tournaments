@@ -52,7 +52,7 @@ struct TournamentResultsShareView: View {
         }
         .sheet(isPresented: $showingShareSheet) {
             if let shareImage = shareImage {
-                ShareSheet(activityItems: [
+                ShareSheet(items: [
                     shareImage,
                     createShareText()
                 ])
@@ -348,20 +348,6 @@ struct TournamentResultsShareView: View {
 }
 
 // MARK: - Supporting Views
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(
-            activityItems: activityItems,
-            applicationActivities: nil
-        )
-        return controller
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
 
 extension DateFormatter {
     static let celebrationDate: DateFormatter = {
