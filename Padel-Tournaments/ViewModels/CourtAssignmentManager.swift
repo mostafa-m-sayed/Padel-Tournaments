@@ -22,35 +22,77 @@ struct CourtAssignmentManager {
         case .distributed:
             return distributeMatchesAcrossCourts(matches: matches, tournament: tournament)
         case .automatic:
-            // Choose strategy based on groups vs courts ratio
-            let optimalStrategy = tournament.numberOfGroups >= tournament.courts ? 
-                CourtAssignmentStrategy.perGroup : 
-                CourtAssignmentStrategy.distributed
-            return assignCourts(to: matches, tournament: tournament.withStrategy(optimalStrategy))
+            // Dead branch — resolveStrategy never returns .automatic — but
+            // kept defensively. Mirror resolveStrategy's mapping.
+            let resolved = resolveStrategy(tournament)
+            return assignCourts(to: matches, tournament: tournament.withStrategy(resolved))
         }
     }
     
     // MARK: - Private Methods
     
-    /// Assigns one court per group
+    /// Assigns courts per group. When courts divide evenly across groups, each
+    /// group receives a contiguous block of `courts / groupCount` courts and
+    /// its matches are distributed across that block. Otherwise falls back to
+    /// the legacy single-court-per-group assignment.
+    /// Knockout matches (groupId == nil) are always distributed across all
+    /// courts so finals/semis can run in parallel without being confined to a
+    /// single group's block.
     private static func assignCourtsPerGroup(
-        matches: [Match], 
+        matches: [Match],
         tournament: Tournament
     ) -> [Match] {
-        let groupedMatches = Dictionary(grouping: matches) { $0.groupId ?? "Knockout" }
+        let knockoutMatches = matches.filter { $0.groupId == nil }
+        let groupStageMatches = matches.filter { $0.groupId != nil }
+        let groupedMatches = Dictionary(grouping: groupStageMatches) { $0.groupId ?? "" }
+        let sortedGroupIds = groupedMatches.keys.sorted()
+        let groupCount = sortedGroupIds.count
+        let courts = tournament.courts
+
         var updatedMatches: [Match] = []
-        
-        for (groupIndex, groupId) in Array(groupedMatches.keys.sorted()).enumerated() {
-            let groupMatches = groupedMatches[groupId] ?? []
-            let assignedCourt = (groupIndex % tournament.courts) + 1
-            
-            for match in groupMatches {
-                var updatedMatch = match
-                updatedMatch.court = assignedCourt
-                updatedMatches.append(updatedMatch)
+
+        if groupCount > 0 && courts >= groupCount && courts % groupCount == 0 {
+            let courtsPerGroup = courts / groupCount
+
+            for (groupIndex, groupId) in sortedGroupIds.enumerated() {
+                let groupMatches = groupedMatches[groupId] ?? []
+                let startCourt = groupIndex * courtsPerGroup + 1
+                let endCourt = startCourt + courtsPerGroup - 1
+
+                // Distribute the group's matches across its court block in
+                // round order so concurrent matches in the same round land on
+                // distinct courts within the block.
+                let sortedMatches = groupMatches.sorted { $0.round < $1.round }
+                var nextCourt = startCourt
+                for match in sortedMatches {
+                    var updated = match
+                    updated.court = nextCourt
+                    updatedMatches.append(updated)
+                    nextCourt = nextCourt < endCourt ? nextCourt + 1 : startCourt
+                }
+            }
+        } else {
+            // Legacy single-court-per-group fallback (more groups than courts,
+            // or uneven division).
+            for (groupIndex, groupId) in sortedGroupIds.enumerated() {
+                let groupMatches = groupedMatches[groupId] ?? []
+                let assignedCourt = courts > 0 ? (groupIndex % courts) + 1 : 1
+                for match in groupMatches {
+                    var updated = match
+                    updated.court = assignedCourt
+                    updatedMatches.append(updated)
+                }
             }
         }
-        
+
+        if !knockoutMatches.isEmpty {
+            let distributed = distributeMatchesAcrossCourts(
+                matches: knockoutMatches,
+                tournament: tournament
+            )
+            updatedMatches.append(contentsOf: distributed)
+        }
+
         return updatedMatches
     }
     
@@ -95,6 +137,13 @@ struct CourtAssignmentManager {
     private static func resolveStrategy(_ tournament: Tournament) -> CourtAssignmentStrategy {
         switch tournament.courtAssignmentStrategy {
         case .automatic:
+            // Prefer per-group when courts divide evenly across groups so each
+            // group gets its own dedicated block of courts.
+            if tournament.numberOfGroups > 0
+                && tournament.courts >= tournament.numberOfGroups
+                && tournament.courts % tournament.numberOfGroups == 0 {
+                return .perGroup
+            }
             return tournament.numberOfGroups >= tournament.courts ? .perGroup : .distributed
         case .perGroup, .distributed:
             return tournament.courtAssignmentStrategy

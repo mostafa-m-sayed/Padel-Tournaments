@@ -34,6 +34,64 @@
             endingLineNumber = "74"
             landmarkName = "startRealTimeListeners()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "CF3E74C1-98CF-4856-A4B0-2AFE6E3C5D92 - 2185f267d412b53"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "Padel_Tournaments.ScheduleViewModel.startRealTimeListeners() -&gt; ()"
+                  moduleName = "Padel-Tournaments.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mostafasayed/Desktop/Work/Personal/Padel-Tournaments/Padel-Tournaments/ViewModels/ScheduleViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "74"
+                  endingLineNumber = "74">
+               </Location>
+               <Location
+                  uuid = "CF3E74C1-98CF-4856-A4B0-2AFE6E3C5D92 - d3c11ca8127a9a02"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #2 (Swift.Array&lt;Padel_Tournaments.Match&gt;) -&gt; () in Padel_Tournaments.ScheduleViewModel.startRealTimeListeners() -&gt; ()"
+                  moduleName = "Padel-Tournaments.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mostafasayed/Desktop/Work/Personal/Padel-Tournaments/Padel-Tournaments/ViewModels/ScheduleViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "74"
+                  endingLineNumber = "74">
+               </Location>
+               <Location
+                  uuid = "CF3E74C1-98CF-4856-A4B0-2AFE6E3C5D92 - e3dbb304f78348bb"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 @Swift.MainActor @Sendable () async -&gt; Swift.Optional&lt;()&gt; in closure #2 (Swift.Array&lt;Padel_Tournaments.Match&gt;) -&gt; () in Padel_Tournaments.ScheduleViewModel.startRealTimeListeners() -&gt; ()"
+                  moduleName = "Padel-Tournaments.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mostafasayed/Desktop/Work/Personal/Padel-Tournaments/Padel-Tournaments/ViewModels/ScheduleViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "74"
+                  endingLineNumber = "74">
+               </Location>
+               <Location
+                  uuid = "CF3E74C1-98CF-4856-A4B0-2AFE6E3C5D92 - b0a4432953752e46"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for closure #1 @Swift.MainActor @Sendable () async -&gt; Swift.Optional&lt;()&gt; in closure #2 (Swift.Array&lt;Padel_Tournaments.Match&gt;) -&gt; () in Padel_Tournaments.ScheduleViewModel.startRealTimeListeners() -&gt; ()"
+                  moduleName = "Padel-Tournaments.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mostafasayed/Desktop/Work/Personal/Padel-Tournaments/Padel-Tournaments/ViewModels/ScheduleViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "74"
+                  endingLineNumber = "74">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

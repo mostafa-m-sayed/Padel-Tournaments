@@ -12,7 +12,7 @@ struct ScheduleEngine {
     /// Generates matches for groups in a round-robin format
     static func generateMatches(groups: [TournamentGroup], courts: Int) -> [Match] {
         var allMatches: [Match] = []
-        
+
         for group in groups {
             let groupMatches = generateRoundRobinMatches(
                 groupId: group.id,
@@ -20,9 +20,21 @@ struct ScheduleEngine {
             )
             allMatches.append(contentsOf: groupMatches)
         }
-        
-        // Schedule matches across rounds to utilize all courts
-        return scheduleMatchesAcrossRounds(allMatches, courts: courts)
+
+        // When courts divide evenly across groups, each group gets a dedicated
+        // block of courts — cap a group's per-round matches to that block size
+        // so scheduling never produces more concurrent matches than the block
+        // can hold.
+        let perGroupCap = perGroupCourtBudget(courts: courts, groupCount: groups.count)
+        return scheduleMatchesAcrossRounds(allMatches, courts: perGroupCap)
+    }
+
+    private static func perGroupCourtBudget(courts: Int, groupCount: Int) -> Int {
+        guard groupCount > 0 else { return max(courts, 1) }
+        if courts >= groupCount && courts % groupCount == 0 {
+            return courts / groupCount
+        }
+        return courts
     }
     
     /// Legacy method for backward compatibility
