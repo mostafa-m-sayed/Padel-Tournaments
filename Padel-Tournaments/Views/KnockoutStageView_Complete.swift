@@ -11,7 +11,6 @@ struct KnockoutStageView: View {
     let tournament: Tournament
     @StateObject private var viewModel: KnockoutStageViewModel
     @State private var selectedMatch: Match?
-    @State private var showingScoreEntry = false
     @Environment(\.dismiss) private var dismiss
     
     init(tournament: Tournament) {
@@ -45,20 +44,18 @@ struct KnockoutStageView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 30)
         }
-        .sheet(isPresented: $showingScoreEntry) {
-            if let match = selectedMatch {
-                ScoreEntryView(
-                    match: match,
-                    teams: tournament.teams,
-                    tournament: viewModel.tournament ?? tournament
-                ) { score1, score2 in
-                    Task {
-                        await viewModel.updateMatchScore(
-                            matchId: match.id,
-                            score1: score1,
-                            score2: score2
-                        )
-                    }
+        .sheet(item: $selectedMatch) { match in
+            ScoreEntryView(
+                match: match,
+                teams: tournament.teams,
+                tournament: viewModel.tournament ?? tournament
+            ) { score1, score2 in
+                Task {
+                    await viewModel.updateMatchScore(
+                        matchId: match.id,
+                        score1: score1,
+                        score2: score2
+                    )
                 }
             }
         }
@@ -277,79 +274,18 @@ struct KnockoutStageView: View {
     
     @ViewBuilder
     private var knockoutMatchesView: some View {
-        VStack(spacing: 24) {
-            if !semifinalMatches.isEmpty {
-                knockoutSectionView(
-                    title: "Semifinals",
-                    matches: semifinalMatches,
-                    color: .purple,
-                    icon: "medal"
-                )
-            }
-            
-            if let thirdPlaceMatch = thirdPlaceMatch {
-                knockoutSectionView(
-                    title: "Third Place Playoff",
-                    matches: [thirdPlaceMatch],
-                    color: .orange,
-                    icon: "medal.fill"
-                )
-            }
-            
-            if let finalMatch = finalMatch {
-                knockoutSectionView(
-                    title: "Final",
-                    matches: [finalMatch],
-                    color: .gold,
-                    icon: "crown.fill"
-                )
+        if semifinalMatches.isEmpty && finalMatch == nil && thirdPlaceMatch == nil {
+            EmptyView()
+        } else {
+            KnockoutBracketView(
+                semifinals: semifinalMatches,
+                finalMatch: finalMatch,
+                thirdPlaceMatch: thirdPlaceMatch,
+                teams: tournament.teams
+            ) { match in
+                selectedMatch = match
             }
         }
-    }
-    
-    @ViewBuilder
-    private func knockoutSectionView(title: String, matches: [Match], color: Color, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(color)
-                
-                Text(title)
-                    .font(.title2.bold())
-                    .foregroundColor(color)
-                
-                Spacer()
-                
-                Text("\(matches.count) match\(matches.count == 1 ? "" : "es")")
-                    .font(.caption.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(color.opacity(0.1))
-                    .foregroundColor(color)
-                    .cornerRadius(6)
-            }
-            
-            VStack(spacing: 12) {
-                ForEach(matches, id: \.id) { match in
-                    KnockoutMatchCard(
-                        match: match,
-                        teams: tournament.teams,
-                        color: color
-                    ) {
-                        selectedMatch = match
-                        showingScoreEntry = true
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(color.opacity(0.05))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(color.opacity(0.3), lineWidth: 1)
-        )
     }
     
     // MARK: - Computed Properties
@@ -423,120 +359,6 @@ struct ProgressStageView: View {
             Text(title)
                 .font(.caption.bold())
                 .foregroundColor(isCompleted ? color : (isCurrent ? color : .gray))
-        }
-    }
-}
-
-struct KnockoutMatchCard: View {
-    let match: Match
-    let teams: [Team]
-    let color: Color
-    let onTap: () -> Void
-    
-    private var team1: Team? {
-        teams.first { $0.id == match.team1Id }
-    }
-    
-    private var team2: Team? {
-        teams.first { $0.id == match.team2Id }
-    }
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                VStack(spacing: 4) {
-                    Text("Court \(match.court)")
-                        .font(.caption.bold())
-                        .foregroundColor(color)
-                    
-                    Text("Round \(match.round)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(width: 60)
-                .padding(.vertical, 8)
-                .background(color.opacity(0.15))
-                .cornerRadius(8)
-                
-                VStack(spacing: 8) {
-                    teamMatchRow(
-                        team: team1,
-                        teamName: team1?.displayName ?? "TBD",
-                        score: match.score1,
-                        isWinner: match.isPlayed && (match.score1 ?? 0) > (match.score2 ?? 0)
-                    )
-                    
-                    Divider()
-                    
-                    teamMatchRow(
-                        team: team2,
-                        teamName: team2?.displayName ?? "TBD",
-                        score: match.score2,
-                        isWinner: match.isPlayed && (match.score2 ?? 0) > (match.score1 ?? 0)
-                    )
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 4) {
-                    if match.isPlayed {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.green)
-                        
-                        Text("Complete")
-                            .font(.caption2)
-                            .foregroundColor(.green)
-                    } else {
-                        Image(systemName: "play.circle")
-                            .font(.title2)
-                            .foregroundColor(color)
-                        
-                        Text("Tap to Score")
-                            .font(.caption2)
-                            .foregroundColor(color)
-                    }
-                }
-            }
-            .padding()
-            .background(.ultraThinMaterial)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(match.isPlayed ? .green.opacity(0.3) : color.opacity(0.3), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-    
-    @ViewBuilder
-    private func teamMatchRow(team: Team?, teamName: String, score: Int?, isWinner: Bool) -> some View {
-        HStack {
-            Text(teamName)
-                .font(.subheadline)
-                .fontWeight(isWinner ? .bold : .regular)
-                .foregroundColor(isWinner ? .primary : .secondary)
-                .lineLimit(1)
-            
-            Spacer()
-            
-            if let score = score {
-                Text("\(score)")
-                    .font(.title3.bold())
-                    .foregroundColor(isWinner ? .green : .primary)
-                    .frame(minWidth: 30)
-            } else {
-                Text("-")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .frame(minWidth: 30)
-            }
-            
-            if isWinner {
-                Image(systemName: "crown.fill")
-                    .font(.caption)
-                    .foregroundColor(.yellow)
-            }
         }
     }
 }
